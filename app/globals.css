@@ -1,20 +1,79 @@
+/* BlackRoad OS Official Brand System */
+/* DO NOT MODIFY - Source: /Users/alexa/Downloads/files(4)/ */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
+  /* Official BlackRoad Colors */
+  --black: #000000;
+  --white: #FFFFFF;
+  --amber: #F5A623;
+  --orange: #F26522;
+  --hot-pink: #FF1D6C;
+  --magenta: #E91E63;
+  --electric-blue: #2979FF;
+  --sky-blue: #448AFF;
+  --violet: #9C27B0;
+  --deep-purple: #5E35B1;
+
+  /* Official Brand Gradient (Golden Ratio stops) */
+  --gradient-brand: linear-gradient(135deg, var(--amber) 0%, var(--hot-pink) 38.2%, var(--violet) 61.8%, var(--electric-blue) 100%);
+
+  /* Fibonacci Spacing System */
+  --phi: 1.618;
+  --space-xs: 8px;
+  --space-sm: 13px;
+  --space-md: 21px;
+  --space-lg: 34px;
+  --space-xl: 55px;
+  --space-2xl: 89px;
+  --space-3xl: 144px;
+
+  /* Official Easing Functions */
+  --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  /* Tailwind compatibility aliases */
+  --br-orange: var(--orange);
+  --br-red: var(--hot-pink);
+  --br-purple: var(--violet);
+  --br-blue: var(--electric-blue);
+
   --background: #000000;
   --foreground: #ffffff;
 }
 
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+  background: var(--black);
+  color: var(--white);
+  overflow-x: hidden;
+  line-height: 1.618;
+  -webkit-font-smoothing: antialiased;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .gradient-brand {
+    background: var(--gradient-brand);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 }
