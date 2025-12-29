@@ -2,5 +2,15 @@ name = "blackroad-api"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
 
+[[d1_databases]]
+binding = "BLACKROAD_SAAS"
+database_name = "blackroad-saas"
+database_id = "c7bec6d8-42fa-49fb-9d8c-57d626dde6b9"
+
 [env.production]
 route = { pattern = "api.blackroad.io/*", zone_name = "blackroad.io" }
+
+# Environment variables (set these in Cloudflare dashboard or via wrangler secret)
+# STRIPE_SECRET_KEY = ""
+# STRIPE_WEBHOOK_SECRET = ""
+# JWT_SECRET = ""
