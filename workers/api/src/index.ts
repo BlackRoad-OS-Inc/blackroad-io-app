@@ -146,7 +146,11 @@ async function handleSignup(request: Request, env: Env): Promise<Response> {
 
 // Handler: Login
 async function handleLogin(request: Request, env: Env): Promise<Response> {
-  const { email } = await request.json();
+  const { email, password } = await request.json();
+
+  if (!email) {
+    return jsonResponse({ error: 'Email required' }, 400);
+  }
 
   const result = await env.BLACKROAD_SAAS.prepare(
     'SELECT * FROM users WHERE email = ?'
@@ -155,7 +159,7 @@ async function handleLogin(request: Request, env: Env): Promise<Response> {
     .first();
 
   if (!result) {
-    return jsonResponse({ error: 'User not found' }, 404);
+    return jsonResponse({ error: 'Invalid credentials' }, 401);
   }
 
   // Update last login
@@ -165,11 +169,50 @@ async function handleLogin(request: Request, env: Env): Promise<Response> {
     .bind(Math.floor(Date.now() / 1000), result.id)
     .run();
 
+  // Generate JWT token
+  const token = await generateJWT({
+    userId: result.id,
+    email: result.email
+  }, env.JWT_SECRET);
+
   return jsonResponse({
     success: true,
-    user: result,
-    // In production, return JWT token here
+    user: {
+      id: result.id,
+      email: result.email,
+      name: result.name,
+    },
+    token,
   });
+}
+
+// Helper: Generate JWT
+async function generateJWT(payload: any, secret: string): Promise<string> {
+  const header = { alg: 'HS256', typ: 'JWT' };
+  const now = Math.floor(Date.now() / 1000);
+  const claims = { ...payload, iat: now, exp: now + 86400 * 30 }; // 30 days
+
+  const encodedHeader = btoa(JSON.stringify(header));
+  const encodedPayload = btoa(JSON.stringify(claims));
+  const message = `${encodedHeader}.${encodedPayload}`;
+
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+
+  const signature = await crypto.subtle.sign(
+    'HMAC',
+    key,
+    encoder.encode(message)
+  );
+
+  const encodedSignature = btoa(String.fromCharCode(...new Uint8Array(signature)));
+  return `${message}.${encodedSignature}`;
 }
 
 // Handler: Get user

@@ -4,6 +4,7 @@
   "/cancel/page": "app/cancel/page.js",
   "/codex/page": "app/codex/page.js",
   "/dashboard/page": "app/dashboard/page.js",
+  "/login/page": "app/login/page.js",
   "/metaverse/page": "app/metaverse/page.js",
   "/page": "app/page.js",
   "/playground/page": "app/playground/page.js",
