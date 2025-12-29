@@ -60,6 +60,14 @@ export default {
         return handleAgents(request, env, url);
       }
 
+      if (url.pathname.startsWith('/api/messages')) {
+        return handleMessages(request, env, url);
+      }
+
+      if (url.pathname.startsWith('/api/presence')) {
+        return handlePresence(request, env, url);
+      }
+
       return jsonResponse({ error: 'Not found' }, 404);
     } catch (error: any) {
       console.error('API Error:', error);
@@ -405,4 +413,110 @@ async function handleAgents(request: Request, env: Env, url: URL): Promise<Respo
   }
 
   return jsonResponse({ error: 'Method not allowed' }, 405);
+}
+
+// Handler: Messages
+async function handleMessages(request: Request, env: Env, url: URL): Promise<Response> {
+  const path = url.pathname.replace('/api/messages', '');
+  
+  // GET /api/messages/channels - List all channels
+  if (path === '/channels' && request.method === 'GET') {
+    const channels = await env.BLACKROAD_SAAS.prepare(
+      'SELECT * FROM channels ORDER BY created_at DESC'
+    ).all();
+    return jsonResponse({ channels: channels.results });
+  }
+  
+  // POST /api/messages/channels - Create new channel
+  if (path === '/channels' && request.method === 'POST') {
+    const { name, type = 'public' } = await request.json();
+    const userId = request.headers.get('X-User-ID') || 'system';
+    
+    const channelId = crypto.randomUUID();
+    const now = Math.floor(Date.now() / 1000);
+    
+    await env.BLACKROAD_SAAS.prepare(
+      'INSERT INTO channels (id, name, type, created_by, created_at) VALUES (?, ?, ?, ?, ?)'
+    ).bind(channelId, name, type, userId, now).run();
+    
+    return jsonResponse({ success: true, channelId });
+  }
+  
+  // GET /api/messages/channel/:id - Get messages from channel
+  if (path.match(/^\/channel\/[^\/]+$/) && request.method === 'GET') {
+    const channelId = path.split('/').pop();
+    const limit = parseInt(url.searchParams.get('limit') || '50');
+    const before = url.searchParams.get('before');
+    
+    let query = 'SELECT * FROM messages WHERE channel_id = ?';
+    const params: any[] = [channelId];
+    
+    if (before) {
+      query += ' AND created_at < ?';
+      params.push(parseInt(before));
+    }
+    
+    query += ' ORDER BY created_at DESC LIMIT ?';
+    params.push(limit);
+    
+    const messages = await env.BLACKROAD_SAAS.prepare(query)
+      .bind(...params)
+      .all();
+    
+    return jsonResponse({ messages: messages.results.reverse() });
+  }
+  
+  // POST /api/messages/send - Send a message
+  if (path === '/send' && request.method === 'POST') {
+    const { channelId, content, agentId } = await request.json();
+    const userId = request.headers.get('X-User-ID');
+    
+    if (!channelId || !content) {
+      return jsonResponse({ error: 'Channel ID and content required' }, 400);
+    }
+    
+    const messageId = crypto.randomUUID();
+    const now = Math.floor(Date.now() / 1000);
+    
+    await env.BLACKROAD_SAAS.prepare(
+      'INSERT INTO messages (id, channel_id, user_id, agent_id, content, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(messageId, channelId, userId, agentId, content, now).run();
+    
+    return jsonResponse({ success: true, messageId, timestamp: now });
+  }
+  
+  return jsonResponse({ error: 'Not found' }, 404);
+}
+
+// Handler: Presence
+async function handlePresence(request: Request, env: Env, url: URL): Promise<Response> {
+  // GET /api/presence - Get all online users/agents
+  if (url.pathname === '/api/presence' && request.method === 'GET') {
+    const fiveMinutesAgo = Math.floor(Date.now() / 1000) - 300;
+    
+    const presence = await env.BLACKROAD_SAAS.prepare(
+      'SELECT * FROM presence WHERE last_seen > ? ORDER BY last_seen DESC'
+    ).bind(fiveMinutesAgo).all();
+    
+    return jsonResponse({ presence: presence.results });
+  }
+  
+  // POST /api/presence/update - Update user/agent status
+  if (url.pathname === '/api/presence/update' && request.method === 'POST') {
+    const { userId, agentId, status = 'online', activity } = await request.json();
+    const now = Math.floor(Date.now() / 1000);
+    
+    await env.BLACKROAD_SAAS.prepare(`
+      INSERT INTO presence (user_id, agent_id, status, last_seen, current_activity) 
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT (user_id, agent_id) DO UPDATE SET 
+        status = excluded.status,
+        last_seen = excluded.last_seen,
+        current_activity = excluded.current_activity
+    `).bind(userId, agentId, status, now, activity).run();
+    
+    return jsonResponse({ success: true });
+  }
+  
+  return jsonResponse({ error: 'Not found' }, 404);
 }
