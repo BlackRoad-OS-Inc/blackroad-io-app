@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Chat - BlackRoad</title>
+  <style>
+    /* BLACKROAD BRAND SYSTEM - EXACT VALUES */
+    :root {
+      /* Brand Colors */
+      --black: #000000;
+      --white: #FFFFFF;
+      --amber: #F5A623;
+      --orange: #F26522;
+      --hot-pink: #FF1D6C;
+      --magenta: #E91E63;
+      --electric-blue: #2979FF;
+      --sky-blue: #448AFF;
+      --violet: #9C27B0;
+      --deep-purple: #5E35B1;
+
+      /* Gradient (Golden Ratio Stops) */
+      --gradient-brand: linear-gradient(135deg, var(--amber) 0%, var(--hot-pink) 38.2%, var(--violet) 61.8%, var(--electric-blue) 100%);
+
+      /* Fibonacci Spacing */
+      --phi: 1.618;
+      --space-xs: 8px;
+      --space-sm: 13px;
+      --space-md: 21px;
+      --space-lg: 34px;
+      --space-xl: 55px;
+      --space-2xl: 89px;
+      --space-3xl: 144px;
+
+      /* Easing */
+      --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+      --ease-out: cubic-bezier(0, 0, 0.2, 1);
+      --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--black);
+      color: var(--white);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+      line-height: 1.618;
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    /* Background Grid */
+    .background-grid {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 55px 55px;
+      animation: gridMove 30s linear infinite;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    @keyframes gridMove {
+      0% { transform: translate(0, 0); }
+      100% { transform: translate(55px, 55px); }
+    }
+
+    /* Glowing Orbs */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.15;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .orb-1 {
+      width: 400px;
+      height: 400px;
+      background: var(--hot-pink);
+      top: 10%;
+      left: 10%;
+      animation: orbDrift1 25s ease-in-out infinite;
+    }
+
+    .orb-2 {
+      width: 300px;
+      height: 300px;
+      background: var(--electric-blue);
+      top: 60%;
+      right: 15%;
+      animation: orbDrift2 30s ease-in-out infinite;
+    }
+
+    @keyframes orbDrift1 {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(100px, -100px); }
+    }
+
+    @keyframes orbDrift2 {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(-80px, 120px); }
+    }
+
+    /* Chat Container */
+    .chat-container {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 300px;
+      background: rgba(255, 255, 255, 0.03);
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      padding: var(--space-lg);
+      overflow-y: auto;
+    }
+
+    .sidebar h2 {
+      font-size: 21px;
+      margin-bottom: var(--space-md);
+      background: var(--gradient-brand);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .agent-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+
+    .agent-item {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 13px;
+      padding: var(--space-md);
+      cursor: pointer;
+      transition: all 0.3s var(--ease-spring);
+    }
+
+    .agent-item:hover {
+      border-color: var(--hot-pink);
+      transform: translateY(-2px);
+    }
+
+    .agent-item.active {
+      border-color: var(--hot-pink);
+      background: rgba(255, 29, 108, 0.15);
+    }
+
+    .agent-emoji {
+      font-size: 34px;
+      margin-bottom: var(--space-xs);
+    }
+
+    .agent-name {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .agent-archetype {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    /* Main Chat Area */
+    .chat-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Chat Header */
+    .chat-header {
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: var(--space-lg);
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+
+    .chat-header-emoji {
+      font-size: 55px;
+    }
+
+    .chat-header-info h1 {
+      font-size: 34px;
+      background: var(--gradient-brand);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 4px;
+    }
+
+    .chat-header-meta {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .chat-header-stats {
+      margin-left: auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-md);
+    }
+
+    .stat-box {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 21px;
+      font-weight: 800;
+      background: var(--gradient-brand);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.5);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Messages Area */
+    .messages-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+
+    .message {
+      display: flex;
+      gap: var(--space-md);
+      opacity: 0;
+      animation: fadeUp 0.5s var(--ease-out) forwards;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .message-avatar {
+      width: 55px;
+      height: 55px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 34px;
+      flex-shrink: 0;
+    }
+
+    .message.user .message-avatar {
+      border-color: var(--electric-blue);
+      background: rgba(41, 121, 255, 0.15);
+    }
+
+    .message.agent .message-avatar {
+      border-color: var(--hot-pink);
+      background: rgba(255, 29, 108, 0.15);
+    }
+
+    .message-content {
+      flex: 1;
+    }
+
+    .message-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-xs);
+    }
+
+    .message-sender {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .message-time {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .message-bubble {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: var(--space-md);
+      max-width: 600px;
+    }
+
+    .message.agent .message-bubble {
+      border-color: rgba(255, 29, 108, 0.3);
+      background: rgba(255, 29, 108, 0.05);
+    }
+
+    /* Typing Indicator */
+    .typing-indicator {
+      display: flex;
+      gap: 5px;
+      padding: var(--space-sm);
+    }
+
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--hot-pink);
+      animation: typingBounce 1.4s infinite ease-in-out;
+    }
+
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes typingBounce {
+      0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Input Area */
+    .input-area {
+      background: rgba(255, 255, 255, 0.03);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding: var(--space-lg);
+      display: flex;
+      gap: var(--space-md);
+      align-items: center;
+    }
+
+    .input-field {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 13px;
+      padding: var(--space-md) var(--space-lg);
+      color: var(--white);
+      font-size: 16px;
+      font-family: inherit;
+      outline: none;
+      transition: all 0.3s var(--ease);
+    }
+
+    .input-field:focus {
+      border-color: var(--hot-pink);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .input-field::placeholder {
+      color: rgba(255, 255, 255, 0.3);
+    }
+
+    .send-btn {
+      background: var(--gradient-brand);
+      border: none;
+      border-radius: 13px;
+      padding: var(--space-md) var(--space-xl);
+      color: var(--white);
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s var(--ease-spring);
+    }
+
+    .send-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(255, 29, 108, 0.4);
+    }
+
+    .send-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Personality Badge */
+    .personality-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 21px;
+      padding: 4px 13px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .personality-badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--gradient-brand);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .sidebar {
+        position: fixed;
+        left: -300px;
+        height: 100vh;
+        z-index: 10;
+        transition: left 0.3s var(--ease);
+      }
+
+      .sidebar.open {
+        left: 0;
+      }
+
+      .chat-header-stats {
+        display: none;
+      }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Effects -->
+  <div class="background-grid"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <div class="chat-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <h2>Your Agents</h2>
+      <div class="agent-list" id="agentList">
+        <!-- Loaded via JavaScript -->
+      </div>
+    </div>
+
+    <!-- Main Chat -->
+    <div class="chat-main">
+      <!-- Header -->
+      <div class="chat-header">
+        <div class="chat-header-emoji" id="headerEmoji">🤖</div>
+        <div class="chat-header-info">
+          <h1 id="headerName">Select an Agent</h1>
+          <div class="chat-header-meta">
+            <span class="personality-badge" id="headerPersonality">
+              <span class="personality-badge-dot"></span>
+              <span id="headerArchetype">No agent selected</span>
+            </span>
+          </div>
+        </div>
+        <div class="chat-header-stats" id="headerStats">
+          <div class="stat-box">
+            <div class="stat-value" id="statFormality">--</div>
+            <div class="stat-label">Formality</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value" id="statEnthusiasm">--</div>
+            <div class="stat-label">Enthusiasm</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value" id="statCreativity">--</div>
+            <div class="stat-label">Creativity</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value" id="statEmpathy">--</div>
+            <div class="stat-label">Empathy</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Messages -->
+      <div class="messages-container" id="messagesContainer">
+        <div class="message agent">
+          <div class="message-avatar">👋</div>
+          <div class="message-content">
+            <div class="message-header">
+              <span class="message-sender">Welcome!</span>
+            </div>
+            <div class="message-bubble">
+              Select an agent from the sidebar to start chatting. Each agent has a unique personality based on your custom settings!
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input -->
+      <div class="input-area">
+        <input
+          type="text"
+          class="input-field"
+          id="messageInput"
+          placeholder="Type your message..."
+          disabled
+        >
+        <button class="send-btn" id="sendBtn" disabled>Send</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = 'https://blackroad-api.amundsonalexa.workers.dev';
+    let currentAgent = null;
+    let messageCount = 0;
+
+    const personalityEmojis = {
+      professional: '💼',
+      friendly: '😊',
+      enthusiastic: '🔥',
+      analytical: '🧠',
+      creative: '🎨'
+    };
+
+    // Load demo agents
+    async function loadAgents() {
+      try {
+        // Load marketplace templates for demo
+        const response = await fetch(`${API_BASE}/api/ai/marketplace/featured`);
+        const data = await response.json();
+
+        const agentList = document.getElementById('agentList');
+        agentList.innerHTML = data.featured.map((template, index) => {
+          const emoji = template.name.match(/[\u{1F300}-\u{1F9FF}]/u)?.[0] || '🤖';
+          return `
+            <div class="agent-item" data-template='${JSON.stringify(template)}' data-index="${index}">
+              <div class="agent-emoji">${emoji}</div>
+              <div class="agent-name">${template.name.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim()}</div>
+              <div class="agent-archetype">${template.category || 'Assistant'}</div>
+            </div>
+          `;
+        }).join('');
+
+        // Add click handlers
+        document.querySelectorAll('.agent-item').forEach(item => {
+          item.addEventListener('click', () => {
+            const template = JSON.parse(item.dataset.template);
+            selectAgent(template);
+
+            document.querySelectorAll('.agent-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+          });
+        });
+
+        // Auto-select first agent
+        if (data.featured.length > 0) {
+          document.querySelector('.agent-item')?.click();
+        }
+      } catch (error) {
+        console.error('Error loading agents:', error);
+      }
+    }
+
+    function selectAgent(template) {
+      currentAgent = template;
+
+      // Update header
+      const emoji = template.name.match(/[\u{1F300}-\u{1F9FF}]/u)?.[0] || '🤖';
+      document.getElementById('headerEmoji').textContent = emoji;
+      document.getElementById('headerName').textContent = template.name.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
+      document.getElementById('headerArchetype').textContent = template.category || 'Assistant';
+
+      // Update stats (random for demo - in production would come from template)
+      document.getElementById('statFormality').textContent = Math.floor(Math.random() * 40) + 30;
+      document.getElementById('statEnthusiasm').textContent = Math.floor(Math.random() * 40) + 50;
+      document.getElementById('statCreativity').textContent = Math.floor(Math.random() * 40) + 40;
+      document.getElementById('statEmpathy').textContent = Math.floor(Math.random() * 40) + 50;
+
+      // Enable input
+      document.getElementById('messageInput').disabled = false;
+      document.getElementById('sendBtn').disabled = false;
+      document.getElementById('messageInput').placeholder = `Chat with ${template.name.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim()}...`;
+
+      // Clear messages
+      const container = document.getElementById('messagesContainer');
+      container.innerHTML = '';
+
+      // Add welcome message
+      addMessage('agent', `Hi! I'm ${template.name}. ${getWelcomeMessage(template.category)}`, emoji);
+    }
+
+    function getWelcomeMessage(category) {
+      const messages = {
+        business: "Ready to talk strategy, revenue, and growth! 💰",
+        technical: "Let's build something awesome together! 💻",
+        creative: "I'm here to help bring your ideas to life! ✨",
+        default: "How can I help you today?"
+      };
+      return messages[category] || messages.default;
+    }
+
+    function addMessage(sender, text, emoji = null) {
+      const container = document.getElementById('messagesContainer');
+      const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${sender}`;
+      messageDiv.style.animationDelay = `${messageCount * 0.1}s`;
+
+      const avatarEmoji = sender === 'user' ? '👤' : (emoji || '🤖');
+      const senderName = sender === 'user' ? 'You' : currentAgent?.name.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim() || 'Agent';
+
+      messageDiv.innerHTML = `
+        <div class="message-avatar">${avatarEmoji}</div>
+        <div class="message-content">
+          <div class="message-header">
+            <span class="message-sender">${senderName}</span>
+            <span class="message-time">${time}</span>
+          </div>
+          <div class="message-bubble">${text}</div>
+        </div>
+      `;
+
+      container.appendChild(messageDiv);
+      container.scrollTop = container.scrollHeight;
+      messageCount++;
+    }
+
+    function addTypingIndicator() {
+      const container = document.getElementById('messagesContainer');
+      const typing = document.createElement('div');
+      typing.className = 'message agent typing-message';
+      typing.id = 'typingIndicator';
+
+      const emoji = currentAgent?.name.match(/[\u{1F300}-\u{1F9FF}]/u)?.[0] || '🤖';
+
+      typing.innerHTML = `
+        <div class="message-avatar">${emoji}</div>
+        <div class="message-content">
+          <div class="message-bubble">
+            <div class="typing-indicator">
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      container.appendChild(typing);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function removeTypingIndicator() {
+      const typing = document.getElementById('typingIndicator');
+      if (typing) typing.remove();
+    }
+
+    function getAgentResponse(userMessage, category) {
+      const responses = {
+        business: [
+          "That's a great revenue opportunity! Let me break down the monetization strategy...",
+          "I see huge potential here! 💰 The key is to focus on customer lifetime value.",
+          "Excellent question! From a business perspective, we should consider the ROI...",
+          "This could be a game-changer! Let's think about pricing tiers and value propositions."
+        ],
+        technical: [
+          "Good thinking! Here's how I'd architect that...",
+          "Let me write some code for that! 💻 We can start with...",
+          "Interesting problem! The optimal solution would be to use...",
+          "I can help with that! Here's the technical approach I'd recommend..."
+        ],
+        creative: [
+          "Ooh, I love this idea! ✨ Let me add some creative flair...",
+          "That sparks so many possibilities! What if we also...",
+          "Beautiful! I'm imagining this with...",
+          "Yes! And we could make it even more interesting by..."
+        ],
+        default: [
+          "That's a great point! Let me think about that...",
+          "Interesting! Here's what I think...",
+          "Good question! My perspective is...",
+          "I can definitely help with that!"
+        ]
+      };
+
+      const pool = responses[category] || responses.default;
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('messageInput');
+      const message = input.value.trim();
+
+      if (!message || !currentAgent) return;
+
+      // Add user message
+      addMessage('user', message);
+      input.value = '';
+
+      // Show typing indicator
+      addTypingIndicator();
+
+      // Simulate agent response
+      setTimeout(() => {
+        removeTypingIndicator();
+        const response = getAgentResponse(message, currentAgent.category);
+        const emoji = currentAgent.name.match(/[\u{1F300}-\u{1F9FF}]/u)?.[0] || '🤖';
+        addMessage('agent', response, emoji);
+      }, 1000 + Math.random() * 1000);
+    }
+
+    // Event listeners
+    document.getElementById('sendBtn').addEventListener('click', sendMessage);
+    document.getElementById('messageInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+
+    // Initialize
+    loadAgents();
+  </script>
+</body>
+</html>
