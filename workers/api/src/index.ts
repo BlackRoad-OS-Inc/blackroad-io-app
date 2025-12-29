@@ -210,9 +210,9 @@ async function handleCreateCheckout(request: Request, env: Env): Promise<Respons
 // Helper: Create Stripe checkout session
 async function createStripeCheckout(env: Env, userId: string, email: string, plan: string): Promise<string> {
   const priceId = plan === 'pro'
-    ? 'price_1SjY98ChUUSEbzyh85p6lAxJ' // BlackRoad Pro: $49/mo with 14-day trial
+    ? 'price_1SjYNiChUUSEbzyhuaR57Blg' // BlackRoad Pro: $49/mo with 14-day trial (LIVE)
     : plan === 'enterprise'
-    ? 'price_1SjYBKChUUSEbzyhczCRoMIY' // BlackRoad Enterprise: $299/mo with 14-day trial
+    ? 'price_1SjYOCChUUSEbzyhzhzchK3g' // BlackRoad Enterprise: $299/mo with 14-day trial (LIVE)
     : '';
 
   const response = await fetch('https://api.stripe.com/v1/checkout/sessions', {
