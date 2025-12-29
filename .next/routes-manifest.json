@@ -79,6 +79,12 @@
       "namedRegex": "^/login(?:/)?$"
     },
     {
+      "page": "/messages",
+      "regex": "^/messages(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/messages(?:/)?$"
+    },
+    {
       "page": "/metaverse",
       "regex": "^/metaverse(?:/)?$",
       "routeKeys": {},

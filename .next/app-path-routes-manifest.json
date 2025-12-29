@@ -5,6 +5,7 @@
   "/codex/page": "/codex",
   "/dashboard/page": "/dashboard",
   "/login/page": "/login",
+  "/messages/page": "/messages",
   "/metaverse/page": "/metaverse",
   "/page": "/",
   "/playground/page": "/playground",

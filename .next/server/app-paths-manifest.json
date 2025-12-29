@@ -5,6 +5,7 @@
   "/codex/page": "app/codex/page.js",
   "/dashboard/page": "app/dashboard/page.js",
   "/login/page": "app/login/page.js",
+  "/messages/page": "app/messages/page.js",
   "/metaverse/page": "app/metaverse/page.js",
   "/page": "app/page.js",
   "/playground/page": "app/playground/page.js",

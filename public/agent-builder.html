@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Agent Builder - BlackRoad</title>
+  <style>
+    /* BLACKROAD BRAND SYSTEM - EXACT VALUES */
+    :root {
+      /* Brand Colors */
+      --black: #000000;
+      --white: #FFFFFF;
+      --amber: #F5A623;
+      --orange: #F26522;
+      --hot-pink: #FF1D6C;
+      --magenta: #E91E63;
+      --electric-blue: #2979FF;
+      --sky-blue: #448AFF;
+      --violet: #9C27B0;
+      --deep-purple: #5E35B1;
+
+      /* Gradient (Golden Ratio Stops) */
+      --gradient-brand: linear-gradient(135deg, var(--amber) 0%, var(--hot-pink) 38.2%, var(--violet) 61.8%, var(--electric-blue) 100%);
+
+      /* Fibonacci Spacing */
+      --phi: 1.618;
+      --space-xs: 8px;
+      --space-sm: 13px;
+      --space-md: 21px;
+      --space-lg: 34px;
+      --space-xl: 55px;
+      --space-2xl: 89px;
+      --space-3xl: 144px;
+
+      /* Easing */
+      --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+      --ease-out: cubic-bezier(0, 0, 0.2, 1);
+      --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--black);
+      color: var(--white);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+      line-height: 1.618;
+      overflow-x: hidden;
+      position: relative;
+      min-height: 100vh;
+    }
+
+    /* Background Grid */
+    .background-grid {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 55px 55px;
+      animation: gridMove 30s linear infinite;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    @keyframes gridMove {
+      0% { transform: translate(0, 0); }
+      100% { transform: translate(55px, 55px); }
+    }
+
+    /* Glowing Orbs */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.15;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .orb-1 {
+      width: 400px;
+      height: 400px;
+      background: var(--hot-pink);
+      top: 10%;
+      left: 10%;
+      animation: orbDrift1 25s ease-in-out infinite;
+    }
+
+    .orb-2 {
+      width: 300px;
+      height: 300px;
+      background: var(--electric-blue);
+      top: 60%;
+      right: 15%;
+      animation: orbDrift2 30s ease-in-out infinite;
+    }
+
+    .orb-3 {
+      width: 350px;
+      height: 350px;
+      background: var(--violet);
+      bottom: 10%;
+      left: 50%;
+      animation: orbDrift3 28s ease-in-out infinite;
+    }
+
+    @keyframes orbDrift1 {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(100px, -100px); }
+    }
+
+    @keyframes orbDrift2 {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(-80px, 120px); }
+    }
+
+    @keyframes orbDrift3 {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(90px, -90px); }
+    }
+
+    /* Container */
+    .container {
+      position: relative;
+      z-index: 2;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: var(--space-2xl) var(--space-lg);
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: var(--space-2xl);
+      opacity: 0;
+      animation: fadeUp 0.8s var(--ease-out) forwards;
+    }
+
+    .header h1 {
+      font-size: 55px;
+      font-weight: 800;
+      background: var(--gradient-brand);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: var(--space-md);
+    }
+
+    .header p {
+      font-size: 21px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Builder Grid */
+    .builder-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: var(--space-lg);
+      opacity: 0;
+      animation: fadeUp 0.8s var(--ease-out) 0.2s forwards;
+    }
+
+    /* Card */
+    .card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      padding: var(--space-lg);
+      transition: all 0.3s var(--ease-spring);
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .card h2 {
+      font-size: 34px;
+      margin-bottom: var(--space-md);
+      background: var(--gradient-brand);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .card h3 {
+      font-size: 21px;
+      margin-bottom: var(--space-sm);
+      margin-top: var(--space-lg);
+    }
+
+    /* Model Selection */
+    .models-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: var(--space-sm);
+      margin-bottom: var(--space-lg);
+    }
+
+    .model-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: var(--space-md);
+      cursor: pointer;
+      transition: all 0.3s var(--ease-spring);
+      text-align: center;
+    }
+
+    .model-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--hot-pink);
+      box-shadow: 0 12px 40px rgba(255, 29, 108, 0.4);
+    }
+
+    .model-card.selected {
+      border-color: var(--hot-pink);
+      background: rgba(255, 29, 108, 0.1);
+    }
+
+    .model-name {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: var(--space-xs);
+    }
+
+    .model-provider {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.5);
+      margin-bottom: var(--space-sm);
+    }
+
+    .model-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-xs);
+      margin-top: var(--space-sm);
+    }
+
+    .stat {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .stat-value {
+      font-weight: 700;
+      color: var(--amber);
+    }
+
+    /* Attribute Sliders */
+    .attribute {
+      margin-bottom: var(--space-lg);
+    }
+
+    .attribute-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-sm);
+    }
+
+    .attribute-label {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .attribute-value {
+      font-size: 21px;
+      font-weight: 800;
+      background: var(--gradient-brand);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .slider {
+      width: 100%;
+      height: 8px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      outline: none;
+      -webkit-appearance: none;
+      position: relative;
+    }
+
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 21px;
+      height: 21px;
+      border-radius: 50%;
+      background: var(--gradient-brand);
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(255, 29, 108, 0.5);
+      transition: transform 0.2s var(--ease-spring);
+    }
+
+    .slider::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    .slider::-moz-range-thumb {
+      width: 21px;
+      height: 21px;
+      border-radius: 50%;
+      background: var(--gradient-brand);
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 4px 12px rgba(255, 29, 108, 0.5);
+    }
+
+    /* Features */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: var(--space-sm);
+    }
+
+    .feature-toggle {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 13px;
+      padding: var(--space-md);
+      cursor: pointer;
+      transition: all 0.3s var(--ease-spring);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .feature-toggle:hover {
+      border-color: var(--hot-pink);
+      transform: translateY(-2px);
+    }
+
+    .feature-toggle.active {
+      background: rgba(255, 29, 108, 0.15);
+      border-color: var(--hot-pink);
+    }
+
+    .toggle-icon {
+      width: 21px;
+      height: 21px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s var(--ease-spring);
+    }
+
+    .feature-toggle.active .toggle-icon {
+      background: var(--gradient-brand);
+      border-color: transparent;
+    }
+
+    .feature-toggle.active .toggle-icon::after {
+      content: '✓';
+      color: var(--white);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    /* Preview Card */
+    .preview-card {
+      position: sticky;
+      top: var(--space-lg);
+    }
+
+    .agent-preview {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: var(--space-lg);
+      margin-bottom: var(--space-md);
+    }
+
+    .preview-emoji {
+      font-size: 55px;
+      text-align: center;
+      margin-bottom: var(--space-md);
+    }
+
+    .preview-name {
+      font-size: 21px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: var(--space-xs);
+    }
+
+    .preview-archetype {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.5);
+      text-align: center;
+      margin-bottom: var(--space-lg);
+    }
+
+    .preview-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-sm);
+    }
+
+    .preview-stat {
+      text-align: center;
+    }
+
+    .preview-stat-value {
+      font-size: 34px;
+      font-weight: 800;
+      background: var(--gradient-brand);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .preview-stat-label {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.5);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Buttons */
+    .btn-primary {
+      width: 100%;
+      background: var(--white);
+      color: var(--black);
+      border: none;
+      border-radius: 13px;
+      padding: var(--space-md) var(--space-lg);
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s var(--ease-spring);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-primary::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--gradient-brand);
+      opacity: 0;
+      transition: opacity 0.3s var(--ease);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(255, 29, 108, 0.4);
+    }
+
+    .btn-primary:hover::before {
+      opacity: 1;
+    }
+
+    .btn-primary span {
+      position: relative;
+      z-index: 1;
+    }
+
+    .btn-secondary {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--white);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 13px;
+      padding: var(--space-md) var(--space-lg);
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s var(--ease-spring);
+      margin-top: var(--space-sm);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: var(--hot-pink);
+      transform: translateY(-2px);
+    }
+
+    /* Personality Selector */
+    .personality-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: var(--space-sm);
+    }
+
+    .personality-option {
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 13px;
+      padding: var(--space-md);
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.3s var(--ease-spring);
+    }
+
+    .personality-option:hover {
+      border-color: var(--electric-blue);
+      transform: translateY(-2px);
+    }
+
+    .personality-option.selected {
+      border-color: var(--electric-blue);
+      background: rgba(41, 121, 255, 0.15);
+    }
+
+    .personality-emoji {
+      font-size: 34px;
+      margin-bottom: var(--space-xs);
+    }
+
+    .personality-name {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .builder-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .preview-card {
+        position: relative;
+        top: 0;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: var(--space-xl) var(--space-md);
+      }
+
+      .header h1 {
+        font-size: 34px;
+      }
+
+      .models-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Effects -->
+  <div class="background-grid"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>🏀 Build Your AI Agent</h1>
+      <p>NBA 2K-style customization. Mix models, adjust attributes, deploy instantly.</p>
+    </div>
+
+    <!-- Builder Grid -->
+    <div class="builder-grid">
+      <!-- Left Column: Builder -->
+      <div class="card">
+        <h2>Step 1: Choose Base Model</h2>
+        <div class="models-grid" id="modelsGrid">
+          <!-- Models loaded via JavaScript -->
+        </div>
+
+        <h3>Step 2: Adjust Attributes</h3>
+        <div class="attribute">
+          <div class="attribute-header">
+            <span class="attribute-label">Formality</span>
+            <span class="attribute-value" id="formalityValue">50</span>
+          </div>
+          <input type="range" min="0" max="100" value="50" class="slider" id="formalitySlider">
+        </div>
+
+        <div class="attribute">
+          <div class="attribute-header">
+            <span class="attribute-label">Enthusiasm</span>
+            <span class="attribute-value" id="enthusiasmValue">50</span>
+          </div>
+          <input type="range" min="0" max="100" value="50" class="slider" id="enthusiasmSlider">
+        </div>
+
+        <div class="attribute">
+          <div class="attribute-header">
+            <span class="attribute-label">Creativity</span>
+            <span class="attribute-value" id="creativityValue">50</span>
+          </div>
+          <input type="range" min="0" max="100" value="50" class="slider" id="creativitySlider">
+        </div>
+
+        <div class="attribute">
+          <div class="attribute-header">
+            <span class="attribute-label">Empathy</span>
+            <span class="attribute-value" id="empathyValue">50</span>
+          </div>
+          <input type="range" min="0" max="100" value="50" class="slider" id="empathySlider">
+        </div>
+
+        <h3>Step 3: Choose Personality</h3>
+        <div class="personality-grid" id="personalityGrid">
+          <div class="personality-option" data-personality="professional">
+            <div class="personality-emoji">💼</div>
+            <div class="personality-name">Professional</div>
+          </div>
+          <div class="personality-option" data-personality="friendly">
+            <div class="personality-emoji">😊</div>
+            <div class="personality-name">Friendly</div>
+          </div>
+          <div class="personality-option" data-personality="enthusiastic">
+            <div class="personality-emoji">🔥</div>
+            <div class="personality-name">Enthusiastic</div>
+          </div>
+          <div class="personality-option" data-personality="analytical">
+            <div class="personality-emoji">🧠</div>
+            <div class="personality-name">Analytical</div>
+          </div>
+          <div class="personality-option" data-personality="creative">
+            <div class="personality-emoji">🎨</div>
+            <div class="personality-name">Creative</div>
+          </div>
+        </div>
+
+        <h3>Step 4: Enable Features</h3>
+        <div class="features-grid">
+          <div class="feature-toggle" data-feature="webSearch">
+            <div class="toggle-icon"></div>
+            <span>Web Search</span>
+          </div>
+          <div class="feature-toggle" data-feature="codeExecution">
+            <div class="toggle-icon"></div>
+            <span>Code Execution</span>
+          </div>
+          <div class="feature-toggle" data-feature="memoryPersistence">
+            <div class="toggle-icon"></div>
+            <span>Memory</span>
+          </div>
+          <div class="feature-toggle" data-feature="learningEnabled">
+            <div class="toggle-icon"></div>
+            <span>Learning</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Preview -->
+      <div class="preview-card">
+        <div class="card">
+          <h2>Agent Preview</h2>
+          <div class="agent-preview">
+            <div class="preview-emoji" id="previewEmoji">🤖</div>
+            <div class="preview-name" id="previewName">My Custom Agent</div>
+            <div class="preview-archetype" id="previewArchetype">Professional</div>
+            <div class="preview-stats">
+              <div class="preview-stat">
+                <div class="preview-stat-value" id="previewFormality">50</div>
+                <div class="preview-stat-label">Formality</div>
+              </div>
+              <div class="preview-stat">
+                <div class="preview-stat-value" id="previewEnthusiasm">50</div>
+                <div class="preview-stat-label">Enthusiasm</div>
+              </div>
+              <div class="preview-stat">
+                <div class="preview-stat-value" id="previewCreativity">50</div>
+                <div class="preview-stat-label">Creativity</div>
+              </div>
+              <div class="preview-stat">
+                <div class="preview-stat-value" id="previewEmpathy">50</div>
+                <div class="preview-stat-label">Empathy</div>
+              </div>
+            </div>
+          </div>
+          <button class="btn-primary" id="createAgentBtn">
+            <span>🚀 Create Agent</span>
+          </button>
+          <button class="btn-secondary" id="saveTemplateBtn">Save as Template</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = 'https://blackroad-api.amundsonalexa.workers.dev';
+
+    // Load models
+    async function loadModels() {
+      try {
+        const response = await fetch(`${API_BASE}/api/ai/models`);
+        const data = await response.json();
+
+        const modelsGrid = document.getElementById('modelsGrid');
+        modelsGrid.innerHTML = data.models.map((model, index) => `
+          <div class="model-card ${index === 0 ? 'selected' : ''}" data-model-id="${model.id}">
+            <div class="model-name">${model.name}</div>
+            <div class="model-provider">${model.provider}</div>
+            <div class="model-stats">
+              <div class="stat">Int: <span class="stat-value">${model.stat_intelligence}</span></div>
+              <div class="stat">Cre: <span class="stat-value">${model.stat_creativity}</span></div>
+              <div class="stat">Spd: <span class="stat-value">${model.stat_speed}</span></div>
+              <div class="stat">Cost: <span class="stat-value">${model.stat_cost_efficiency}</span></div>
+            </div>
+          </div>
+        `).join('');
+
+        // Add click handlers
+        document.querySelectorAll('.model-card').forEach(card => {
+          card.addEventListener('click', () => {
+            document.querySelectorAll('.model-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+          });
+        });
+      } catch (error) {
+        console.error('Error loading models:', error);
+      }
+    }
+
+    // Sliders
+    const sliders = {
+      formality: document.getElementById('formalitySlider'),
+      enthusiasm: document.getElementById('enthusiasmSlider'),
+      creativity: document.getElementById('creativitySlider'),
+      empathy: document.getElementById('empathySlider')
+    };
+
+    Object.keys(sliders).forEach(key => {
+      sliders[key].addEventListener('input', (e) => {
+        const value = e.target.value;
+        document.getElementById(`${key}Value`).textContent = value;
+        document.getElementById(`preview${key.charAt(0).toUpperCase() + key.slice(1)}`).textContent = value;
+      });
+    });
+
+    // Personality
+    const personalityEmojis = {
+      professional: '💼',
+      friendly: '😊',
+      enthusiastic: '🔥',
+      analytical: '🧠',
+      creative: '🎨'
+    };
+
+    document.querySelectorAll('.personality-option').forEach(option => {
+      option.addEventListener('click', () => {
+        document.querySelectorAll('.personality-option').forEach(o => o.classList.remove('selected'));
+        option.classList.add('selected');
+
+        const personality = option.dataset.personality;
+        document.getElementById('previewEmoji').textContent = personalityEmojis[personality];
+        document.getElementById('previewArchetype').textContent = personality.charAt(0).toUpperCase() + personality.slice(1);
+      });
+    });
+
+    // Features
+    document.querySelectorAll('.feature-toggle').forEach(toggle => {
+      toggle.addEventListener('click', () => {
+        toggle.classList.toggle('active');
+      });
+    });
+
+    // Create Agent
+    document.getElementById('createAgentBtn').addEventListener('click', async () => {
+      const selectedModel = document.querySelector('.model-card.selected');
+      const selectedPersonality = document.querySelector('.personality-option.selected');
+
+      if (!selectedModel) {
+        alert('Please select a model first!');
+        return;
+      }
+
+      const blueprint = {
+        userId: 'demo-user',
+        name: document.getElementById('previewName').textContent,
+        baseModelId: selectedModel.dataset.modelId,
+        attributes: {
+          formality: parseInt(sliders.formality.value),
+          enthusiasm: parseInt(sliders.enthusiasm.value),
+          creativity: parseInt(sliders.creativity.value),
+          empathy: parseInt(sliders.empathy.value)
+        },
+        personality: {
+          archetype: selectedPersonality ? selectedPersonality.dataset.personality : 'professional'
+        },
+        features: {
+          webSearch: document.querySelector('[data-feature="webSearch"]').classList.contains('active'),
+          codeExecution: document.querySelector('[data-feature="codeExecution"]').classList.contains('active'),
+          memoryPersistence: document.querySelector('[data-feature="memoryPersistence"]').classList.contains('active'),
+          learningEnabled: document.querySelector('[data-feature="learningEnabled"]').classList.contains('active')
+        }
+      };
+
+      try {
+        const response = await fetch(`${API_BASE}/api/ai/blueprints`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(blueprint)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert(`🎉 Agent created! Blueprint ID: ${data.blueprintId}`);
+        }
+      } catch (error) {
+        console.error('Error creating agent:', error);
+        alert('Error creating agent. Check console for details.');
+      }
+    });
+
+    // Initialize
+    loadModels();
+  </script>
+</body>
+</html>
