@@ -141,8 +141,8 @@ self.__SERVER_FILES_MANIFEST={
       "isExperimentalCompile": false
     }
   },
-  "appDir": "/Users/alexa/blackroad-io-app",
-  "relativeAppDir": "blackroad-io-app",
+  "appDir": "/private/tmp/blackroad-io-app",
+  "relativeAppDir": "",
   "files": [
     ".next/routes-manifest.json",
     ".next/server/pages-manifest.json",

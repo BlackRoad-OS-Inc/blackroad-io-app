@@ -5,6 +5,6 @@ R.c("server/chunks/ssr/41ad5_next_dist_ae920347._.js")
 R.c("server/chunks/ssr/[root-of-the-server]__864bd352._.js")
 R.c("server/chunks/ssr/[root-of-the-server]__0819c028._.js")
 R.c("server/chunks/ssr/[root-of-the-server]__4106b8b3._.js")
-R.c("server/chunks/ssr/blackroad-io-app__next-internal_server_app__global-error_page_actions_115cbb85.js")
+R.c("server/chunks/ssr/_next-internal_server_app__global-error_page_actions_75761787.js")
 R.m(28132)
 module.exports=R.m(28132).exports

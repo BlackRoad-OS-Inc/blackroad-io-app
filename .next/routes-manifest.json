@@ -65,6 +65,18 @@
       "regex": "^/metaverse(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/metaverse(?:/)?$"
+    },
+    {
+      "page": "/pricing",
+      "regex": "^/pricing(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/pricing(?:/)?$"
+    },
+    {
+      "page": "/signup",
+      "regex": "^/signup(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/signup(?:/)?$"
     }
   ],
   "dataRoutes": [],
