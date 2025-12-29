@@ -24,7 +24,7 @@ export default function SignupPage() {
 
     try {
       // Call API to create user and checkout session
-      const response = await fetch('/api/auth/signup', {
+      const response = await fetch('https://blackroad-api.amundsonalexa.workers.dev/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, name, plan })
