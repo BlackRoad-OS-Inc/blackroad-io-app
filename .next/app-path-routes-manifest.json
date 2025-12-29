@@ -1,9 +1,14 @@
 {
   "/_global-error/page": "/_global-error",
   "/_not-found/page": "/_not-found",
+  "/cancel/page": "/cancel",
+  "/codex/page": "/codex",
   "/dashboard/page": "/dashboard",
   "/metaverse/page": "/metaverse",
   "/page": "/",
+  "/playground/page": "/playground",
   "/pricing/page": "/pricing",
-  "/signup/page": "/signup"
+  "/quantum/page": "/quantum",
+  "/signup/page": "/signup",
+  "/success/page": "/success"
 }

@@ -55,6 +55,18 @@
       "namedRegex": "^/_not\\-found(?:/)?$"
     },
     {
+      "page": "/cancel",
+      "regex": "^/cancel(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/cancel(?:/)?$"
+    },
+    {
+      "page": "/codex",
+      "regex": "^/codex(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/codex(?:/)?$"
+    },
+    {
       "page": "/dashboard",
       "regex": "^/dashboard(?:/)?$",
       "routeKeys": {},
@@ -67,16 +79,34 @@
       "namedRegex": "^/metaverse(?:/)?$"
     },
     {
+      "page": "/playground",
+      "regex": "^/playground(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/playground(?:/)?$"
+    },
+    {
       "page": "/pricing",
       "regex": "^/pricing(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/pricing(?:/)?$"
     },
     {
+      "page": "/quantum",
+      "regex": "^/quantum(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/quantum(?:/)?$"
+    },
+    {
       "page": "/signup",
       "regex": "^/signup(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/signup(?:/)?$"
+    },
+    {
+      "page": "/success",
+      "regex": "^/success(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/success(?:/)?$"
     }
   ],
   "dataRoutes": [],

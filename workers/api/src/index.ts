@@ -210,7 +210,9 @@ async function handleCreateCheckout(request: Request, env: Env): Promise<Respons
 // Helper: Create Stripe checkout session
 async function createStripeCheckout(env: Env, userId: string, email: string, plan: string): Promise<string> {
   const priceId = plan === 'pro'
-    ? 'price_1QdqL0BpJPwF3f4lbcvJtEh7' // Replace with your actual Stripe Price ID
+    ? 'price_1SjY98ChUUSEbzyh85p6lAxJ' // BlackRoad Pro: $49/mo with 14-day trial
+    : plan === 'enterprise'
+    ? 'price_1SjYBKChUUSEbzyhczCRoMIY' // BlackRoad Enterprise: $299/mo with 14-day trial
     : '';
 
   const response = await fetch('https://api.stripe.com/v1/checkout/sessions', {
@@ -225,8 +227,8 @@ async function createStripeCheckout(env: Env, userId: string, email: string, pla
       'client_reference_id': userId,
       'line_items[0][price]': priceId,
       'line_items[0][quantity]': '1',
-      'success_url': 'https://blackroad.io/dashboard?success=true',
-      'cancel_url': 'https://blackroad.io/pricing?canceled=true',
+      'success_url': 'https://blackroad.io/success',
+      'cancel_url': 'https://blackroad.io/cancel',
       'metadata[user_id]': userId,
     }),
   });
