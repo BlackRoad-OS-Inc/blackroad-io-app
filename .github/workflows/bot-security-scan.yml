@@ -103,30 +103,81 @@ cc: @${context.repo.owner}`;
         with:
           script: |
             const fs = require('fs');
+            const { execSync } = require('child_process');
 
             // Check for package.json
             if (fs.existsSync('package.json')) {
-              const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-              const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+              let auditOutput;
 
-              const outdatedWarnings = [];
+              try {
+                // npm audit exits with non-zero status when vulnerabilities are found,
+                // so we capture stdout even on error.
+                auditOutput = execSync('npm audit --json', {
+                  encoding: 'utf8',
+                  stdio: ['pipe', 'pipe', 'pipe']
+                });
+              } catch (error) {
+                auditOutput =
+                  (error && error.stdout && error.stdout.toString()) ||
+                  (error && error.stderr && error.stderr.toString()) ||
+                  '';
+              }
 
-              // Known vulnerable package patterns (simplified)
-              const knownVulnerable = ['event-stream@3.3.6', 'lodash@<4.17.21'];
+              if (!auditOutput) {
+                return;
+              }
 
-              for (const [name, version] of Object.entries(deps)) {
-                const fullDep = `${name}@${version}`;
-                if (knownVulnerable.some(v => fullDep.includes(v))) {
-                  outdatedWarnings.push(`⚠️ ${name}@${version} has known vulnerabilities`);
+              let auditJson;
+              try {
+                auditJson = JSON.parse(auditOutput);
+              } catch (e) {
+                // If we cannot parse the audit output, we cannot produce reliable results.
+                return;
+              }
+
+              const findings = [];
+
+              // npm v7+ format: vulnerabilities object
+              if (auditJson.vulnerabilities && typeof auditJson.vulnerabilities === 'object') {
+                for (const [name, vuln] of Object.entries(auditJson.vulnerabilities)) {
+                  const severity = vuln.severity || 'unknown';
+                  const via = Array.isArray(vuln.via) ? vuln.via : [];
+                  const titles = via
+                    .map(v => (typeof v === 'string' ? v : v && v.title))
+                    .filter(Boolean)
+                    .slice(0, 3);
+                  const titleSuffix = titles.length ? `: ${titles.join('; ')}` : '';
+                  findings.push(`- ${name} (${severity})${titleSuffix}`);
                 }
               }
 
-              if (outdatedWarnings.length > 0) {
+              // npm v6 format: advisories object
+              if (!findings.length && auditJson.advisories && typeof auditJson.advisories === 'object') {
+                for (const advisory of Object.values(auditJson.advisories)) {
+                  const name = advisory.module_name || advisory.name || 'unknown';
+                  const severity = advisory.severity || 'unknown';
+                  const title = advisory.title || advisory.overview || '';
+                  const line = `- ${name} (${severity})${title ? `: ${title}` : ''}`;
+                  findings.push(line);
+                }
+              }
+
+              if (!findings.length && auditJson.metadata && auditJson.metadata.vulnerabilities) {
+                const meta = auditJson.metadata.vulnerabilities;
+                const severities = Object.entries(meta)
+                  .filter(([, count]) => typeof count === 'number' && count > 0)
+                  .map(([sev, count]) => `${sev}: ${count}`);
+                if (severities.length) {
+                  findings.push(`- Vulnerabilities summary: ${severities.join(', ')}`);
+                }
+              }
+
+              if (findings.length > 0) {
                 await github.rest.issues.create({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   title: '🔒 Security: Vulnerable Dependencies Detected',
-                  body: `**Vulnerable dependencies found:**\n\n${outdatedWarnings.join('\n')}\n\nPlease update to secure versions.`,
+                  body: `**Vulnerable dependencies found (via \`npm audit\`):**\n\n${findings.join('\n')}\n\nPlease review the npm audit report and update to secure versions.`,
                   labels: ['security', 'dependencies']
                 });
               }
