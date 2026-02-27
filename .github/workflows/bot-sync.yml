@@ -75,48 +75,40 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const yaml = require('js-yaml');
 
-            const botConfig = {
-              bots: {
-                issue_triage: {
-                  enabled: true,
-                  auto_label: true,
-                  assign_team: true,
-                  detect_duplicates: true
-                },
-                pr_review: {
-                  enabled: true,
-                  require_tests: true,
-                  security_scan: true,
-                  code_quality: true
-                },
-                security: {
-                  enabled: true,
-                  dependabot: true,
-                  secret_scan: true,
-                  codeql: true
-                },
-                documentation: {
-                  enabled: true,
-                  auto_generate: true,
-                  sync_readme: true
-                },
-                sync: {
-                  enabled: true,
-                  workflow_sync: true,
-                  config_sync: true
-                }
-              },
-              organization: 'BlackRoad-OS',
-              contact: 'blackroad.systems@gmail.com'
-            };
+            const botConfigYaml = `bots:
+              issue_triage:
+                enabled: true
+                auto_label: true
+                assign_team: true
+                detect_duplicates: true
+              pr_review:
+                enabled: true
+                require_tests: true
+                security_scan: true
+                code_quality: true
+              security:
+                enabled: true
+                dependabot: true
+                secret_scan: true
+                codeql: true
+              documentation:
+                enabled: true
+                auto_generate: true
+                sync_readme: true
+              sync:
+                enabled: true
+                workflow_sync: true
+                config_sync: true
+            organization: BlackRoad-OS
+            contact: blackroad.systems@gmail.com
+            `;
 
             if (!fs.existsSync('.github')) {
               fs.mkdirSync('.github');
             }
 
-            fs.writeFileSync('.github/bot-config.yml', yaml.dump(botConfig));
+            fs.writeFileSync('.github/bot-config.yml', botConfigYaml);
 
             console.log('✅ Created bot config');
 
