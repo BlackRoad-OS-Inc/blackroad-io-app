@@ -174,8 +174,10 @@ jobs:
 
             // Create tag and push changes
             try {
+              const branch = process.env.GITHUB_REF_NAME;
               execSync(`git tag -a v${newVersion} -m "Release v${newVersion}"`);
-              execSync(`git push origin main --tags`, { stdio: 'inherit' });
+              execSync(`git push origin ${branch}`, { stdio: 'inherit' });
+              execSync(`git push origin --tags`, { stdio: 'inherit' });
             } catch (error) {
               console.error(`❌ Failed to push tags for v${newVersion}:`, error && error.message ? error.message : error);
               // Attempt to clean up the local tag to avoid inconsistent state
