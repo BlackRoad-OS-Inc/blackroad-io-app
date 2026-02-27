@@ -68,21 +68,88 @@ See CONTRIBUTING.md
           script: |
             const fs = require('fs');
             const path = require('path');
+            const ts = require('typescript');
 
-            // Simple JSDoc extraction
+            // AST-based JSDoc extraction using TypeScript
             function extractDocs(filePath) {
               const content = fs.readFileSync(filePath, 'utf8');
-              const docRegex = /\/\*\*([\s\S]*?)\*\/\s*(?:export\s+)?(?:async\s+)?function\s+(\w+)/g;
+              const sourceFile = ts.createSourceFile(
+                filePath,
+                content,
+                ts.ScriptTarget.Latest,
+                /*setParentNodes*/ true
+              );
+
               const docs = [];
 
-              let match;
-              while ((match = docRegex.exec(content)) !== null) {
-                docs.push({
-                  name: match[2],
-                  doc: match[1].trim()
-                });
+              function getNodeName(node) {
+                if (ts.isFunctionDeclaration(node) && node.name) {
+                  return node.name.text;
+                }
+
+                if (ts.isMethodDeclaration(node) && node.name && ts.isIdentifier(node.name)) {
+                  return node.name.text;
+                }
+
+                if (ts.isVariableStatement(node)) {
+                  for (const decl of node.declarationList.declarations) {
+                    if (
+                      ts.isIdentifier(decl.name) &&
+                      decl.initializer &&
+                      (ts.isArrowFunction(decl.initializer) || ts.isFunctionExpression(decl.initializer))
+                    ) {
+                      return decl.name.text;
+                    }
+                  }
+                }
+
+                return undefined;
               }
 
+              function extractJSDocText(node) {
+                const jsDocNodes = ts.getJSDocCommentsAndTags(node) || [];
+                if (!jsDocNodes.length) {
+                  return '';
+                }
+
+                const parts = [];
+
+                for (const jsDocNode of jsDocNodes) {
+                  const commentText = jsDocNode.getText(sourceFile);
+                  // Strip the /** */ delimiters and leading * on each line
+                  const inner = commentText
+                    .replace(/^\/\*\*+/, '')
+                    .replace(/\*\/\s*$/, '')
+                    .split('\n')
+                    .map(line => line.replace(/^\s*\*\s?/, ''))
+                    .join('\n')
+                    .trim();
+
+                  if (inner) {
+                    parts.push(inner);
+                  }
+                }
+
+                return parts.join('\n\n');
+              }
+
+              function visit(node) {
+                const name = getNodeName(node);
+
+                if (name) {
+                  const docText = extractJSDocText(node);
+                  if (docText) {
+                    docs.push({
+                      name,
+                      doc: docText
+                    });
+                  }
+                }
+
+                ts.forEachChild(node, visit);
+              }
+
+              visit(sourceFile);
               return docs;
             }
 
