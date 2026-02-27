@@ -152,31 +152,60 @@ A detailed description helps reviewers understand your changes.`
               }
             }
 
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const prNumber = pr.number;
+
+            let body;
             if (insights.length > 0) {
-              await github.rest.pulls.createReview({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: pr.number,
-                event: 'COMMENT',
-                body: `🤖 **Bot Code Review:**
+              body = `🤖 **Bot Code Review:**
 
 ${insights.join('\n\n')}
 
-This is an automated review. A human will review your changes soon.`
-              });
+This is an automated review. A human will review your changes soon.`;
             } else {
-              await github.rest.pulls.createReview({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: pr.number,
-                event: 'COMMENT',
-                body: `🤖 **Bot Code Review:**
+              body = `🤖 **Bot Code Review:**
 
 ✅ No issues detected in automated review
 ✅ Code changes look good
 ✅ Ready for human review
 
-This is an automated review.`
+This is an automated review.`;
+            }
+
+            // Look for an existing bot comment to update instead of creating new reviews
+            const { data: comments } = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number: prNumber,
+              per_page: 100
+            });
+
+            const existingBotComment = comments.find(comment =>
+              comment.user &&
+              comment.user.type === 'Bot' &&
+              typeof comment.body === 'string' &&
+              comment.body.startsWith('🤖 **Bot Code Review:**')
+            );
+
+            if (existingBotComment) {
+              // Only update if content has actually changed
+              if (existingBotComment.body !== body) {
+                await github.rest.issues.updateComment({
+                  owner,
+                  repo,
+                  comment_id: existingBotComment.id,
+                  body
+                });
+              }
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: prNumber,
+                body
+              });
+            }
               });
             }
 
