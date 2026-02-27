@@ -36,6 +36,7 @@ jobs:
               { name: 'security', color: 'ff0000', description: 'Security vulnerability or concern' },
               { name: 'performance', color: 'ff9800', description: 'Performance improvement' },
               { name: 'testing', color: '4caf50', description: 'Testing related' },
+              { name: 'dependencies', color: '0366d6', description: 'Dependency updates' },
               { name: 'priority:high', color: 'b60205', description: 'High priority' },
               { name: 'priority:medium', color: 'fbca04', description: 'Medium priority' },
               { name: 'priority:low', color: '0e8a16', description: 'Low priority' },
