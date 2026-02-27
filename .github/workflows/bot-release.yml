@@ -35,10 +35,48 @@ jobs:
             const fs = require('fs');
             const { execSync } = require('child_process');
 
+            // Explicit release gate to avoid releasing on every push to main/master
+            const isManualDispatch = context.eventName === 'workflow_dispatch';
+            let shouldRelease = false;
+
+            if (isManualDispatch) {
+              // Manual dispatch is always allowed to trigger a release
+              shouldRelease = true;
+            } else {
+              // For push events, require an explicit release indicator in the latest commit message
+              const latestCommitMessage = execSync('git log -1 --pretty=%B').toString();
+              const releaseTriggerPatterns = [
+                '[release]',
+                'chore(release)',
+                'release:'
+              ];
+
+              shouldRelease = releaseTriggerPatterns.some((pattern) =>
+                latestCommitMessage.includes(pattern)
+              );
+            }
+
+            if (!shouldRelease) {
+              core.info('Release conditions not met (no manual dispatch or release indicator in commit message). Skipping release.');
+              core.setOutput('should_release', 'false');
+              // Attempt to provide a current_version output if package.json exists
+              let currentVersion = '0.0.0';
+              if (fs.existsSync('package.json')) {
+                const pkgForVersion = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+                currentVersion = pkgForVersion.version || '0.0.0';
+              }
+              core.setOutput('current_version', currentVersion);
+              core.setOutput('bump_type', '');
+              return { shouldRelease: false, bumpType: '', currentVersion };
+            }
+
             // Check for package.json
             if (!fs.existsSync('package.json')) {
               console.log('No package.json, skipping release');
-              return { shouldRelease: false };
+              core.setOutput('should_release', 'false');
+              core.setOutput('bump_type', '');
+              core.setOutput('current_version', '0.0.0');
+              return { shouldRelease: false, bumpType: '', currentVersion: '0.0.0' };
             }
 
             const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
