@@ -104,10 +104,36 @@ cc: @${context.repo.owner}`;
             if (fs.existsSync('package.json')) {
               let auditOutput;
 
+              // Determine package manager from package.json (if specified)
+              let auditCommand = 'npm audit --json';
               try {
-                // npm audit exits with non-zero status when vulnerabilities are found,
+                const pkgJsonRaw = fs.readFileSync('package.json', 'utf8');
+                const pkgJson = JSON.parse(pkgJsonRaw);
+                const packageManager = pkgJson.packageManager || '';
+                const isPnpm = typeof packageManager === 'string' && packageManager.startsWith('pnpm@');
+
+                if (isPnpm) {
+                  auditCommand = 'pnpm audit --json';
+
+                  // Optionally install dependencies to make audit results accurate.
+                  try {
+                    execSync('pnpm install --frozen-lockfile', {
+                      stdio: ['ignore', 'inherit', 'inherit']
+                    });
+                  } catch (installError) {
+                    // Do not fail the job if install fails; just warn and continue to audit.
+                    core.warning('pnpm install failed before audit; audit results may be incomplete: ' + installError.message);
+                  }
+                }
+              } catch (pmDetectError) {
+                // If we cannot read/parse package.json, fall back to npm audit.
+                core.warning('Unable to determine packageManager from package.json; defaulting to npm audit: ' + pmDetectError.message);
+              }
+
+              try {
+                // audit command exits with non-zero status when vulnerabilities are found,
                 // so we capture stdout even on error.
-                auditOutput = execSync('npm audit --json', {
+                auditOutput = execSync(auditCommand, {
                   encoding: 'utf8',
                   stdio: ['pipe', 'pipe', 'pipe']
                 });
