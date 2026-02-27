@@ -36,14 +36,8 @@ jobs:
             if (title.startsWith('docs:')) {
               labels.push('documentation');
             }
-            if (title.startsWith('refactor:')) {
-              labels.push('refactoring');
-            }
             if (title.startsWith('test:')) {
               labels.push('testing');
-            }
-            if (title.startsWith('chore:')) {
-              labels.push('chore');
             }
 
             // Size labels
