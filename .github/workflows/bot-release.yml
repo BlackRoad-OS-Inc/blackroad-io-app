@@ -172,9 +172,23 @@ jobs:
             execSync(`git add package.json`);
             execSync(`git commit -m "🤖 chore: Bump version to ${newVersion}"`);
 
-            // Create tag
-            execSync(`git tag -a v${newVersion} -m "Release v${newVersion}"`);
-            execSync(`git push origin main --tags`);
+            // Create tag and push changes
+            try {
+              execSync(`git tag -a v${newVersion} -m "Release v${newVersion}"`);
+              execSync(`git push origin main --tags`, { stdio: 'inherit' });
+            } catch (error) {
+              console.error(`❌ Failed to push tags for v${newVersion}:`, error && error.message ? error.message : error);
+              // Attempt to clean up the local tag to avoid inconsistent state
+              try {
+                execSync(`git tag -d v${newVersion}`);
+              } catch (cleanupError) {
+                console.error(
+                  `⚠️ Failed to clean up local tag v${newVersion}:`,
+                  cleanupError && cleanupError.message ? cleanupError.message : cleanupError
+                );
+              }
+              throw error;
+            }
 
             // Create GitHub release
             await github.rest.repos.createRelease({
