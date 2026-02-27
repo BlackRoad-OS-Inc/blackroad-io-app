@@ -100,9 +100,9 @@ jobs:
                 enabled: true
                 workflow_sync: true
                 config_sync: true
-            organization: BlackRoad-OS
-            contact: blackroad.systems@gmail.com
-            `;
+organization: BlackRoad-OS
+contact: blackroad.systems@gmail.com
+`;
 
             if (!fs.existsSync('.github')) {
               fs.mkdirSync('.github');
