@@ -87,14 +87,9 @@ ${findings.map(f => `- **${f.type}** found in \`${f.file}\` (${f.count} occurren
 
 cc: @${context.repo.owner}`;
 
-              await github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title: '🚨 Security: Potential Secrets Detected',
-                body: message,
-                labels: ['security', 'priority:high']
-              });
-
+              // Do not create a public issue for potential secrets to avoid confirming their presence.
+              // Instead, surface the problem via workflow logs and job failure.
+              core.warning('Potential secrets detected! Please review the security scan logs for details.');
               core.setFailed('Potential secrets detected!');
             }
 
