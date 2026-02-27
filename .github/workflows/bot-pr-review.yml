@@ -118,20 +118,42 @@ A detailed description helps reviewers understand your changes.`
             }
 
             const secretPatterns = [
-              /api[_-]?key/i,
-              /secret/i,
-              /password/i,
-              /token/i,
-              /credential/i
+              /\bapi[_-]?key\b/i,
+              /\bsecret\b/i,
+              /\bpassword\b/i,
+              /\btoken\b/i,
+              /\bcredential\b/i
             ];
 
             for (const file of files) {
-              if (file.patch) {
-                for (const pattern of secretPatterns) {
-                  if (pattern.test(file.patch)) {
-                    insights.push(`🔒 Possible secret detected in ${file.filename}. Please verify no credentials are committed.`);
-                    break;
-                  }
+              if (!file.patch) continue;
+
+              // Only inspect added lines (those starting with "+", excluding diff headers)
+              const addedLines = file.patch
+                .split('\n')
+                .filter(line => line.startsWith('+') && !line.startsWith('+++'));
+
+              if (addedLines.length === 0) continue;
+
+              // Extract string literals from added lines to avoid matching in comments/identifiers
+              const stringLiterals = [];
+              const stringRegex = /(['"`])(?:\\.|(?!\1).)*\1/g;
+
+              for (const line of addedLines) {
+                let match;
+                while ((match = stringRegex.exec(line)) !== null) {
+                  stringLiterals.push(match[0]);
+                }
+              }
+
+              if (stringLiterals.length === 0) continue;
+
+              const contentToScan = stringLiterals.join('\n');
+
+              for (const pattern of secretPatterns) {
+                if (pattern.test(contentToScan)) {
+                  insights.push(`🔒 Possible secret detected in ${file.filename}. Please verify no credentials are committed.`);
+                  break;
                 }
               }
             }
