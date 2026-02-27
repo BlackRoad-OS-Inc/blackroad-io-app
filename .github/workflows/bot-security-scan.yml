@@ -168,13 +168,40 @@ cc: @${context.repo.owner}`;
               }
 
               if (findings.length > 0) {
-                await github.rest.issues.create({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  title: '🔒 Security: Vulnerable Dependencies Detected',
-                  body: `**Vulnerable dependencies found (via \`npm audit\`):**\n\n${findings.join('\n')}\n\nPlease review the npm audit report and update to secure versions.`,
-                  labels: ['security', 'dependencies']
+                const owner = context.repo.owner;
+                const repo = context.repo.repo;
+                const issueTitle = '🔒 Security: Vulnerable Dependencies Detected';
+
+                // Look for an existing open issue with the same title and labels
+                const { data: issues } = await github.rest.issues.listForRepo({
+                  owner,
+                  repo,
+                  state: 'open',
+                  labels: 'security,dependencies',
+                  per_page: 100
                 });
+
+                const existingIssue = issues.find(issue => issue.title === issueTitle);
+                const issueBody = `**Vulnerable dependencies found (via \`npm audit\`):**\n\n${findings.join('\n')}\n\nPlease review the npm audit report and update to secure versions.`;
+
+                if (existingIssue) {
+                  // Add a new comment with the latest findings to the existing issue
+                  await github.rest.issues.createComment({
+                    owner,
+                    repo,
+                    issue_number: existingIssue.number,
+                    body: issueBody
+                  });
+                } else {
+                  // No existing issue found; create a new one
+                  await github.rest.issues.create({
+                    owner,
+                    repo,
+                    title: issueTitle,
+                    body: issueBody,
+                    labels: ['security', 'dependencies']
+                  });
+                }
               }
             }
 
