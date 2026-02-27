@@ -207,8 +207,6 @@ This is an automated review.`;
                 body
               });
             }
-              });
-            }
 
       - name: Log to memory
         run: |
