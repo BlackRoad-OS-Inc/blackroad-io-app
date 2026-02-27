@@ -205,12 +205,29 @@ See CONTRIBUTING.md
 
               // Add links section if missing
               if (!readme.includes('## Links') && !readme.includes('## Resources')) {
-                const links = `
+                // Try to read optional docs URL from .github/bot-config.yml
+                const configPath = '.github/bot-config.yml';
+                let docsUrl = null;
+
+                if (fs.existsSync(configPath)) {
+                  const configContent = fs.readFileSync(configPath, 'utf8');
+                  const match = configContent.match(/^\s*docsUrl:\s*(\S+)\s*$/m);
+                  if (match && match[1]) {
+                    docsUrl = match[1].trim();
+                  }
+                }
+
+                let links = `
 
 ## Links
 
-- [Documentation](https://docs.blackroad.io)
-- [API Reference](./API.md)
+`;
+
+                if (docsUrl) {
+                  links += `- [Documentation](${docsUrl})\n`;
+                }
+
+                links += `- [API Reference](./API.md)
 - [Contributing](./CONTRIBUTING.md)
 - [BlackRoad OS](https://github.com/BlackRoad-OS)
 `;
