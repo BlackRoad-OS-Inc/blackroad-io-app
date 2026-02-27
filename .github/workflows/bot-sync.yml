@@ -156,12 +156,17 @@ jobs:
             if (status.trim()) {
               const branchName = `bot/sync-${Date.now()}`;
 
-              execSync(`git config user.name "BlackRoad Bot"`);
-              execSync(`git config user.email "bot@blackroad.io"`);
-              execSync(`git checkout -b ${branchName}`);
-              execSync(`git add .`);
-              execSync(`git commit -m "🤖 chore: Sync bot workflows and config"`);
-              execSync(`git push origin ${branchName}`);
+              try {
+                execSync(`git config user.name "BlackRoad Bot"`);
+                execSync(`git config user.email "bot@blackroad.io"`);
+                execSync(`git checkout -b ${branchName}`);
+                execSync(`git add .`);
+                execSync(`git commit -m "🤖 chore: Sync bot workflows and config"`);
+                execSync(`git push origin ${branchName}`);
+              } catch (error) {
+                console.log('❌ Failed to push branch for sync PR:', error && error.message ? error.message : error);
+                return;
+              }
 
               await github.rest.pulls.create({
                 owner: context.repo.owner,
