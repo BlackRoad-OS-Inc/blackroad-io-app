@@ -52,14 +52,6 @@ See CONTRIBUTING.md
 `;
 
               fs.writeFileSync('README.md', template);
-
-              await github.rest.repos.createOrUpdateFileContents({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                path: 'README.md',
-                message: '🤖 docs: Add README template',
-                content: Buffer.from(template).toString('base64')
-              });
             }
 
       - name: Generate API docs
