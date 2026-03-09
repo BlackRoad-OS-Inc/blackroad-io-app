@@ -1,0 +1,248 @@
+name: Bot - Security Scan
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday
+
+permissions:
+  contents: read
+  security-events: write
+  issues: write
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Secret scanning
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const secretPatterns = [
+              { name: 'API Key', pattern: /(?:api[_-]?key|apikey)[\s:=]+['"]?([a-zA-Z0-9_-]{20,})['"]?/gi },
+              { name: 'Password', pattern: /(?:password|passwd|pwd)[\s:=]+['"]?([^\s'"]{8,})['"]?/gi },
+              { name: 'Token', pattern: /(?:token|auth[_-]?token)[\s:=]+['"]?([a-zA-Z0-9_-]{20,})['"]?/gi },
+              { name: 'Private Key', pattern: /-----BEGIN (?:RSA |EC )?PRIVATE KEY-----/gi },
+              { name: 'AWS Key', pattern: /AKIA[0-9A-Z]{16}/gi },
+              { name: 'GitHub Token', pattern: /gh[ps]_[a-zA-Z0-9]{36,}/gi }
+            ];
+
+            const findings = [];
+
+            function scanDirectory(dir) {
+              const entries = fs.readdirSync(dir, { withFileTypes: true });
+
+              for (const entry of entries) {
+                const fullPath = path.join(dir, entry.name);
+
+                // Skip node_modules, .git, etc.
+                if (entry.name.startsWith('.') || entry.name === 'node_modules') {
+                  continue;
+                }
+
+                if (entry.isDirectory()) {
+                  scanDirectory(fullPath);
+                } else if (entry.isFile()) {
+                  try {
+                    const content = fs.readFileSync(fullPath, 'utf8');
+
+                    for (const { name, pattern } of secretPatterns) {
+                      const matches = content.match(pattern);
+                      if (matches) {
+                        findings.push({
+                          type: name,
+                          file: fullPath,
+                          count: matches.length
+                        });
+                      }
+                    }
+                  } catch (err) {
+                    // Skip binary files
+                  }
+                }
+              }
+            }
+
+            scanDirectory('.');
+
+            if (findings.length > 0) {
+              const message = `🚨 **Security Alert: Potential Secrets Detected**
+
+${findings.map(f => `- **${f.type}** found in \`${f.file}\` (${f.count} occurrence${f.count > 1 ? 's' : ''})`).join('\n')}
+
+⚠️ **Action Required:**
+1. Verify if these are real secrets
+2. If yes, rotate credentials immediately
+3. Remove from git history
+4. Use environment variables instead
+
+cc: @${context.repo.owner}`;
+
+              // Do not create a public issue for potential secrets to avoid confirming their presence.
+              // Instead, surface the problem via workflow logs and job failure.
+              core.warning('Potential secrets detected! Please review the security scan logs for details.');
+              core.setFailed('Potential secrets detected!');
+            }
+
+      - name: Dependency scan
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const { execSync } = require('child_process');
+
+            // Check for package.json
+            if (fs.existsSync('package.json')) {
+              let auditOutput;
+
+              // Determine package manager from package.json (if specified)
+              let auditCommand = 'npm audit --json';
+              try {
+                const pkgJsonRaw = fs.readFileSync('package.json', 'utf8');
+                const pkgJson = JSON.parse(pkgJsonRaw);
+                const packageManager = pkgJson.packageManager || '';
+                const isPnpm = typeof packageManager === 'string' && packageManager.startsWith('pnpm@');
+
+                if (isPnpm) {
+                  auditCommand = 'pnpm audit --json';
+
+                  // Optionally install dependencies to make audit results accurate.
+                  try {
+                    execSync('pnpm install --frozen-lockfile', {
+                      stdio: ['ignore', 'inherit', 'inherit']
+                    });
+                  } catch (installError) {
+                    // Do not fail the job if install fails; just warn and continue to audit.
+                    core.warning('pnpm install failed before audit; audit results may be incomplete: ' + installError.message);
+                  }
+                }
+              } catch (pmDetectError) {
+                // If we cannot read/parse package.json, fall back to npm audit.
+                core.warning('Unable to determine packageManager from package.json; defaulting to npm audit: ' + pmDetectError.message);
+              }
+
+              try {
+                // audit command exits with non-zero status when vulnerabilities are found,
+                // so we capture stdout even on error.
+                auditOutput = execSync(auditCommand, {
+                  encoding: 'utf8',
+                  stdio: ['pipe', 'pipe', 'pipe']
+                });
+              } catch (error) {
+                auditOutput =
+                  (error && error.stdout && error.stdout.toString()) ||
+                  (error && error.stderr && error.stderr.toString()) ||
+                  '';
+              }
+
+              if (!auditOutput) {
+                return;
+              }
+
+              let auditJson;
+              try {
+                auditJson = JSON.parse(auditOutput);
+              } catch (e) {
+                // If we cannot parse the audit output, we cannot produce reliable results.
+                return;
+              }
+
+              const findings = [];
+
+              // npm v7+ format: vulnerabilities object
+              if (auditJson.vulnerabilities && typeof auditJson.vulnerabilities === 'object') {
+                for (const [name, vuln] of Object.entries(auditJson.vulnerabilities)) {
+                  const severity = vuln.severity || 'unknown';
+                  const via = Array.isArray(vuln.via) ? vuln.via : [];
+                  const titles = via
+                    .map(v => (typeof v === 'string' ? v : v && v.title))
+                    .filter(Boolean)
+                    .slice(0, 3);
+                  const titleSuffix = titles.length ? `: ${titles.join('; ')}` : '';
+                  findings.push(`- ${name} (${severity})${titleSuffix}`);
+                }
+              }
+
+              // npm v6 format: advisories object
+              if (!findings.length && auditJson.advisories && typeof auditJson.advisories === 'object') {
+                for (const advisory of Object.values(auditJson.advisories)) {
+                  const name = advisory.module_name || advisory.name || 'unknown';
+                  const severity = advisory.severity || 'unknown';
+                  const title = advisory.title || advisory.overview || '';
+                  const line = `- ${name} (${severity})${title ? `: ${title}` : ''}`;
+                  findings.push(line);
+                }
+              }
+
+              if (!findings.length && auditJson.metadata && auditJson.metadata.vulnerabilities) {
+                const meta = auditJson.metadata.vulnerabilities;
+                const severities = Object.entries(meta)
+                  .filter(([, count]) => typeof count === 'number' && count > 0)
+                  .map(([sev, count]) => `${sev}: ${count}`);
+                if (severities.length) {
+                  findings.push(`- Vulnerabilities summary: ${severities.join(', ')}`);
+                }
+              }
+
+              if (findings.length > 0) {
+                const owner = context.repo.owner;
+                const repo = context.repo.repo;
+                const issueTitle = '🔒 Security: Vulnerable Dependencies Detected';
+
+                // Look for an existing open issue with the same title and labels
+                const { data: issues } = await github.rest.issues.listForRepo({
+                  owner,
+                  repo,
+                  state: 'open',
+                  labels: 'security,dependencies',
+                  per_page: 100
+                });
+
+                const existingIssue = issues.find(issue => issue.title === issueTitle);
+                const issueBody = `**Vulnerable dependencies found (via \`npm audit\`):**\n\n${findings.join('\n')}\n\nPlease review the npm audit report and update to secure versions.`;
+
+                if (existingIssue) {
+                  // Add a new comment with the latest findings to the existing issue
+                  await github.rest.issues.createComment({
+                    owner,
+                    repo,
+                    issue_number: existingIssue.number,
+                    body: issueBody
+                  });
+                } else {
+                  // No existing issue found; create a new one
+                  await github.rest.issues.create({
+                    owner,
+                    repo,
+                    title: issueTitle,
+                    body: issueBody,
+                    labels: ['security', 'dependencies']
+                  });
+                }
+              }
+            }
+
+      - name: CodeQL Analysis
+        uses: github/codeql-action/init@v3
+        with:
+          languages: [javascript, python, typescript]
+        continue-on-error: true
+
+      - name: Run CodeQL
+        uses: github/codeql-action/analyze@v3
+        continue-on-error: true
+
+      - name: Log to memory
+        run: |
+          if [ -f ~/memory-system.sh ]; then
+            ~/memory-system.sh log bot-action "security-scan" "Security scan completed for ${{ github.repository }}"
+          fi

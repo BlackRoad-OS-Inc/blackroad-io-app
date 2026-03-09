@@ -1,0 +1,215 @@
+name: Bot - PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+  issues: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Auto-label PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const title = pr.title.toLowerCase();
+            const labels = [];
+
+            // Detect PR type from title
+            if (title.startsWith('feat:') || title.startsWith('feature:')) {
+              labels.push('enhancement');
+            }
+            if (title.startsWith('fix:') || title.startsWith('bugfix:')) {
+              labels.push('bug');
+            }
+            if (title.startsWith('docs:')) {
+              labels.push('documentation');
+            }
+            if (title.startsWith('test:')) {
+              labels.push('testing');
+            }
+
+            // Size labels
+            const changedFiles = pr.changed_files;
+            if (changedFiles <= 5) {
+              labels.push('size:small');
+            } else if (changedFiles <= 20) {
+              labels.push('size:medium');
+            } else {
+              labels.push('size:large');
+            }
+
+            if (labels.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: labels
+              });
+            }
+
+      - name: Check PR description
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const body = pr.body || '';
+
+            if (body.length < 50) {
+              await github.rest.pulls.createReview({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                event: 'COMMENT',
+                body: `🤖 **Bot Review Notice:**
+
+⚠️ This PR has a short description. Please add:
+- What does this PR do?
+- Why is this change needed?
+- How was it tested?
+
+A detailed description helps reviewers understand your changes.`
+              });
+            }
+
+      - name: Analyze code changes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+
+            // Get files changed
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number
+            });
+
+            const insights = [];
+
+            // Check for common patterns
+            const hasTests = files.some(f => f.filename.includes('test') || f.filename.includes('spec'));
+            const hasDocs = files.some(f => f.filename.endsWith('.md'));
+            const hasConfig = files.some(f => f.filename.includes('config') || f.filename.endsWith('.json') || f.filename.endsWith('.yml'));
+
+            if (!hasTests && files.length > 3) {
+              insights.push('⚠️ No test files detected. Consider adding tests for your changes.');
+            }
+
+            if (files.length > 50) {
+              insights.push('⚠️ Large PR detected (50+ files). Consider breaking into smaller PRs.');
+            }
+
+            const secretPatterns = [
+              /\bapi[_-]?key\b/i,
+              /\bsecret\b/i,
+              /\bpassword\b/i,
+              /\btoken\b/i,
+              /\bcredential\b/i
+            ];
+
+            for (const file of files) {
+              if (!file.patch) continue;
+
+              // Only inspect added lines (those starting with "+", excluding diff headers)
+              const addedLines = file.patch
+                .split('\n')
+                .filter(line => line.startsWith('+') && !line.startsWith('+++'));
+
+              if (addedLines.length === 0) continue;
+
+              // Extract string literals from added lines to avoid matching in comments/identifiers
+              const stringLiterals = [];
+              const stringRegex = /(['"`])(?:\\.|(?!\1).)*\1/g;
+
+              for (const line of addedLines) {
+                let match;
+                while ((match = stringRegex.exec(line)) !== null) {
+                  stringLiterals.push(match[0]);
+                }
+              }
+
+              if (stringLiterals.length === 0) continue;
+
+              const contentToScan = stringLiterals.join('\n');
+
+              for (const pattern of secretPatterns) {
+                if (pattern.test(contentToScan)) {
+                  insights.push(`🔒 Possible secret detected in ${file.filename}. Please verify no credentials are committed.`);
+                  break;
+                }
+              }
+            }
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const prNumber = pr.number;
+
+            let body;
+            if (insights.length > 0) {
+              body = `🤖 **Bot Code Review:**
+
+${insights.join('\n\n')}
+
+This is an automated review. A human will review your changes soon.`;
+            } else {
+              body = `🤖 **Bot Code Review:**
+
+✅ No issues detected in automated review
+✅ Code changes look good
+✅ Ready for human review
+
+This is an automated review.`;
+            }
+
+            // Look for an existing bot comment to update instead of creating new reviews
+            const { data: comments } = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number: prNumber,
+              per_page: 100
+            });
+
+            const existingBotComment = comments.find(comment =>
+              comment.user &&
+              comment.user.type === 'Bot' &&
+              typeof comment.body === 'string' &&
+              comment.body.startsWith('🤖 **Bot Code Review:**')
+            );
+
+            if (existingBotComment) {
+              // Only update if content has actually changed
+              if (existingBotComment.body !== body) {
+                await github.rest.issues.updateComment({
+                  owner,
+                  repo,
+                  comment_id: existingBotComment.id,
+                  body
+                });
+              }
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: prNumber,
+                body
+              });
+            }
+
+      - name: Log to memory
+        run: |
+          if [ -f ~/memory-system.sh ]; then
+            ~/memory-system.sh log bot-action "pr-review" "Reviewed PR #${{ github.event.pull_request.number }} in ${{ github.repository }}"
+          fi
